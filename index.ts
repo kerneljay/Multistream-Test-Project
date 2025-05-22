@@ -142,7 +142,7 @@ if (twitch) {
 
 // KICK INTEGRATION //
 function startKick() {
-  const xArgs = [
+  const kickArgs = [
     "-hide_banner",
     "-loglevel",
     "error",
@@ -153,10 +153,10 @@ function startKick() {
     "copy",
     "-f",
     "flv",
-    `rtmps://${kickUrl}/app/${kickKey}`, // Put the Kick URL here
+    `${kickUrl}/app/${kickKey}`, // Put the Kick URL here
   ];
 
-  const ffmpegKick = spawn(ffmpegPath, xArgs, { stdio: "inherit" });
+  const ffmpegKick = spawn(ffmpegPath, kickArgs, { stdio: "inherit" });
   return ffmpegKick;
 }
 
