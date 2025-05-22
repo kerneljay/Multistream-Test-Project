@@ -73,7 +73,7 @@ nms.run();
 function handleStoppingStream() {
   safeLog("Stopping stream...");
   ffmpegProcesses.forEach((proc) => proc.kill());
-  nms.stop();
+  // nms.stop(); // Why no work???
   process.exit();
 }
 
