@@ -4,12 +4,13 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const ffmpegPath = "C:/ffmpeg/bin/ffmpeg.exe";
-const obsKey = "heyobs";
+const ffmpegPath = "C:/ffmpeg/bin/ffmpeg.exe"; // This is ur FFmpeg path
+const obsKey = "heyobs"; // This is ur OBS stream key
 
 const youtubeKey = process.env.YOUTUBE_KEY;
 const twitchStreamKey = process.env.TWITCH_KEY;
-const kickKey = process.env.X_KEY;
+const kickKey = process.env.KICK_KEY;
+const kickUrl = process.env.KICK_URL;
 
 const twitch = true;
 const youtube = true;
@@ -149,7 +150,7 @@ function startKick() {
     "copy",
     "-f",
     "flv",
-    `rtmps://fa723fc1b171.global-contribute.live-video.net/app/${kickKey}`, // Put the Kick URL here
+    `rtmps://${kickUrl}/app/${kickKey}`, // Put the Kick URL here
   ];
 
   const ffmpegKick = spawn(ffmpegPath, xArgs, { stdio: "inherit" });
