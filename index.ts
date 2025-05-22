@@ -9,7 +9,7 @@ const obsKey = "heyobs";
 
 const youtubeKey = process.env.YOUTUBE_KEY;
 const twitchStreamKey = process.env.TWITCH_KEY;
-const xKey = process.env.X_KEY;
+const kickKey = process.env.X_KEY;
 
 const twitch = true;
 const youtube = true;
@@ -26,12 +26,12 @@ console.log = (...message) => {
     return;
   }
   if (
-    typeof xKey === "string" &&
+    typeof kickKey === "string" &&
     typeof twitchStreamKey === "string" &&
     typeof youtubeKey === "string"
   ) {
     if (
-      message.join(" ").includes(xKey) ||
+      message.join(" ").includes(kickKey) ||
       message.join(" ").includes(twitchStreamKey) ||
       message.join(" ").includes(youtubeKey)
     ) {
@@ -149,7 +149,7 @@ function startX() {
     "copy",
     "-f",
     "flv",
-    `rtmps://fa723fc1b171.global-contribute.live-video.net/app/${xKey}`, // corrected
+    `rtmps://fa723fc1b171.global-contribute.live-video.net/app/${kickKey}`, // corrected
   ];
 
   const ffmpegX = spawn(ffmpegPath, xArgs, { stdio: "inherit" });
