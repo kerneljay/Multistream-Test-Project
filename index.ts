@@ -23,15 +23,18 @@ const ffmpegProcesses: any[] = [];
 // Logging override
 function safeLog(...message: string[]) {
   const joined = message.join(" ");
+  if (joined.includes("close") && closeServerOnStreamEnd) {
+    handleStoppingStream();
+  }
   if (
     [youtubeKey, twitchKey, kickKey].some((key) => key && joined.includes(key))
   )
     return;
   if (
-    message.join(" ").includes("v4.0.18") ||
-    message.join(" ").includes("Author") ||
-    message.join(" ").includes("Homepage") ||
-    message.join(" ").includes("License")
+    joined.includes("v4.0.18") ||
+    joined.includes("Author") ||
+    joined.includes("Homepage") ||
+    joined.includes("License")
   )
     return;
   if (joined.includes("undefined")) {
