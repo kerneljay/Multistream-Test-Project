@@ -4,44 +4,29 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const closeServerOnStreamEnd = false;
-const ffmpegPath = "C:/ffmpeg/bin/ffmpeg.exe"; // This is ur FFmpeg path
-const obsKey = "heyobs"; // This is ur OBS stream key
+// Load config
+const ffmpegPath = process.env.FFMPEG_PATH;
+const obsKey = process.env.OBS_KEY;
 
 const youtubeKey = process.env.YOUTUBE_KEY;
-const twitchStreamKey = process.env.TWITCH_KEY;
+const twitchKey = process.env.TWITCH_KEY;
 const kickKey = process.env.KICK_KEY;
 const kickUrl = process.env.KICK_URL;
 
-const twitch = true; // wanna stream to twitch? go ahead!
-const youtube = true; // wanna stream to youtube? go ahead!
-const kick = true; // wanna stream to kick? go ahead!
+const enableYouTube = process.env.ENABLE_YOUTUBE === "true";
+const enableTwitch = process.env.ENABLE_TWITCH === "true";
+const enableKick = process.env.ENABLE_KICK === "true";
 
-console.log("Twitch Stream: ", twitch ? "Enabled" : "Disabled");
-console.log("Youtube Stream: ", youtube ? "Enabled" : "Disabled");
-console.log("Kick Stream: ", kick ? "Enabled" : "Disabled");
+const closeServerOnStreamEnd = true;
+const ffmpegProcesses: any[] = [];
 
-// Override console logging in NodeMediaServer
-console.log = (...message) => {
-  if (message.join(" ").includes("close")) {
-    if (closeServerOnStreamEnd) {
-      handleStoppingStream();
-    }
-    return;
-  }
+// Logging override
+function safeLog(...message: string[]) {
+  const joined = message.join(" ");
   if (
-    typeof kickKey === "string" &&
-    typeof twitchStreamKey === "string" &&
-    typeof youtubeKey === "string"
-  ) {
-    if (
-      message.join(" ").includes(kickKey) ||
-      message.join(" ").includes(twitchStreamKey) ||
-      message.join(" ").includes(youtubeKey)
-    ) {
-      return;
-    }
-  }
+    [youtubeKey, twitchKey, kickKey].some((key) => key && joined.includes(key))
+  )
+    return;
   if (
     message.join(" ").includes("v4.0.18") ||
     message.join(" ").includes("Author") ||
@@ -49,17 +34,24 @@ console.log = (...message) => {
     message.join(" ").includes("License")
   )
     return;
-  if (message.join(" ").includes("undefined")) {
-    console.error(message.join(" "));
+  if (joined.includes("undefined")) {
+    console.error(joined);
     return;
   }
-  console.info(message.join(" "));
-};
 
-// console.info = () => {};
-// console.warn = () => {};
-// console.error = () => {};
+  if (
+    joined.includes("v4.0.18") ||
+    joined.includes("Author") ||
+    joined.includes("Homepage") ||
+    joined.includes("License")
+  )
+    return;
 
+  console.info(joined);
+}
+console.log = safeLog;
+
+// NodeMediaServer config
 const config = {
   rtmp: {
     port: 1935,
@@ -71,78 +63,24 @@ const config = {
     mediaroot: "./media",
   },
 };
+
 const nms = new NodeMediaServer(config);
 nms.run();
 
 function handleStoppingStream() {
-  // This means the RTMP server closes locally whenever we stop the stream (this is a energy saving setting)
-  console.log("Stopping stream");
+  safeLog("Stopping stream...");
+  ffmpegProcesses.forEach((proc) => proc.kill());
+  nms.stop();
   process.exit();
 }
 
-// YOUTUBE INTEGRATION //
-function startYoutube() {
-  const youtubeArgs = [
-    "-hide_banner", // don’t show the build/config banner
-    "-loglevel",
-    "error", // only show actual errors
-    "-re",
-    "-i",
-    `rtmp://localhost/live/${obsKey}`,
-    "-c",
-    "copy",
-    "-f",
-    "flv",
-    `rtmp://a.rtmp.youtube.com/live2/${youtubeKey}`,
-  ];
-  const ffmpegYouTube = spawn(ffmpegPath, youtubeArgs, { stdio: "inherit" });
-  return ffmpegYouTube;
-}
+["SIGINT", "SIGTERM", "exit"].forEach((signal) =>
+  process.on(signal, () => handleStoppingStream())
+);
 
-if (youtube) {
-  const ffmpegYouTube = startYoutube();
-  ffmpegYouTube.on("error", (err) => {
-    console.error("YouTube FFmpeg failed to start:", err);
-  });
-  ffmpegYouTube.on("exit", (code, signal) => {
-    console.log(`YouTube FFmpeg exited with code ${code}, signal ${signal}`);
-  });
-}
-// END OF YOUTUBE INTEGRATION //
-
-// TWITCH INTEGRATION //
-function startTwitch() {
-  const twitchArgs = [
-    "-hide_banner", // don’t show the build/config banner
-    "-loglevel",
-    "error", // only show actual errors
-    "-re",
-    "-i",
-    `rtmp://localhost/live/${obsKey}`,
-    "-c",
-    "copy",
-    "-f",
-    "flv",
-    `rtmp://live.twitch.tv/app/${twitchStreamKey}`,
-  ];
-  const ffmpegTwitch = spawn(ffmpegPath, twitchArgs, { stdio: "inherit" });
-  return ffmpegTwitch;
-}
-
-if (twitch) {
-  const ffmpegTwitch = startTwitch();
-  ffmpegTwitch.on("error", (err) => {
-    console.error("Twitch FFmpeg failed to start:", err);
-  });
-  ffmpegTwitch.on("exit", (code, signal) => {
-    console.log(`Twitch FFmpeg exited with code ${code}, signal ${signal}`);
-  });
-}
-// END OF TWITCH INTEGRATION //
-
-// KICK INTEGRATION //
-function startKick() {
-  const kickArgs = [
+// Centralized stream launcher
+function startStream(targetName: string, targetUrl: string) {
+  const args = [
     "-hide_banner",
     "-loglevel",
     "error",
@@ -153,20 +91,59 @@ function startKick() {
     "copy",
     "-f",
     "flv",
-    `${kickUrl}/app/${kickKey}`, // Put the Kick URL here
+    targetUrl,
   ];
 
-  const ffmpegKick = spawn(ffmpegPath, kickArgs, { stdio: "inherit" });
-  return ffmpegKick;
+  if (!ffmpegPath) {
+    console.error(
+      "FFmpeg path not provided. Please set the FFMPEG_PATH environment variable."
+    );
+    return;
+  }
+
+  const proc = spawn(ffmpegPath, args, {
+    stdio: ["ignore", "inherit", "inherit"],
+  });
+
+  if (!proc) {
+    console.error(`Failed to start ${targetName} FFmpeg process.`);
+    return;
+  }
+
+  proc.on("error", (err: any) => {
+    console.error(`${targetName} FFmpeg error:`, err);
+  });
+
+  proc.on("exit", (code: any, signal: any) => {
+    safeLog(`${targetName} FFmpeg exited with code ${code}, signal ${signal}`);
+    if (closeServerOnStreamEnd) handleStoppingStream();
+  });
+
+  console.log(`${targetName} FFmpeg process started.`);
+  ffmpegProcesses.push(proc);
 }
 
-if (kick) {
-  const ffmpegKick = startKick();
-  ffmpegKick.on("error", (err) => {
-    console.error("Kick FFmpeg failed to start:", err);
-  });
-  ffmpegKick.on("exit", (code, signal) => {
-    console.log(`Kick FFmpeg exited with code ${code}, signal ${signal}`);
-  });
+// Start enabled streams
+if (enableYouTube && youtubeKey) {
+  startStream("YouTube", `rtmp://a.rtmp.youtube.com/live2/${youtubeKey}`);
 }
-// END OF KICK INTEGRATION //
+if (enableTwitch && twitchKey) {
+  startStream("Twitch", `rtmp://live.twitch.tv/app/${twitchKey}`);
+}
+if (enableKick && kickKey && kickUrl) {
+  startStream("Kick", `${kickUrl}/app/${kickKey}`);
+}
+
+// Health check
+setInterval(() => {
+  ffmpegProcesses.forEach((proc, idx) => {
+    if (proc.killed) {
+      console.warn(`⚠️ FFmpeg process #${idx} appears to be stopped.`);
+    }
+  });
+}, 60000);
+
+safeLog("Twitch Stream: ", enableTwitch ? "Enabled" : "Disabled");
+safeLog("YouTube Stream: ", enableYouTube ? "Enabled" : "Disabled");
+safeLog("Kick Stream: ", enableKick ? "Enabled" : "Disabled");
+safeLog("🟢 Server running and ready to stream.");

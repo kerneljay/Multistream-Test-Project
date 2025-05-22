@@ -1,4 +1,10 @@
-YOUTUBE_KEY = "
-TWITCH_KEY = ""
-KICK_KEY = ""
-KICK_URL = ""
+OBS_KEY=""
+YOUTUBE_KEY = ""
+TWITCH_KEY = "live_"
+KICK_KEY = "sk_us"
+KICK_URL = "rtmps://"
+FFMPEG_PATH=C:/ffmpeg/bin/ffmpeg.exe
+
+ENABLE_YOUTUBE=true
+ENABLE_TWITCH=true
+ENABLE_KICK=true
