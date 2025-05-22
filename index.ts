@@ -13,11 +13,11 @@ const kickKey = process.env.X_KEY;
 
 const twitch = true;
 const youtube = true;
-const x = true;
+const kick = true;
 
 console.log("Twitch Stream: ", twitch ? "Enabled" : "Disabled");
 console.log("Youtube Stream: ", youtube ? "Enabled" : "Disabled");
-console.log("X Stream: ", x ? "Enabled" : "Disabled");
+console.log("Kick Stream: ", kick ? "Enabled" : "Disabled");
 
 // Override console logging in NodeMediaServer
 console.log = (...message) => {
@@ -136,8 +136,8 @@ if (twitch) {
 }
 // END OF TWITCH INTEGRATION //
 
-// X INTEGRATION //
-function startX() {
+// KICK INTEGRATION //
+function startKick() {
   const xArgs = [
     "-hide_banner",
     "-loglevel",
@@ -149,20 +149,20 @@ function startX() {
     "copy",
     "-f",
     "flv",
-    `rtmps://fa723fc1b171.global-contribute.live-video.net/app/${kickKey}`, // corrected
+    `rtmps://fa723fc1b171.global-contribute.live-video.net/app/${kickKey}`, // Put the Kick URL here
   ];
 
-  const ffmpegX = spawn(ffmpegPath, xArgs, { stdio: "inherit" });
-  return ffmpegX;
+  const ffmpegKick = spawn(ffmpegPath, xArgs, { stdio: "inherit" });
+  return ffmpegKick;
 }
 
-if (x) {
-  const ffmpegX = startX();
-  ffmpegX.on("error", (err) => {
-    console.error("X FFmpeg failed to start:", err);
+if (kick) {
+  const ffmpegKick = startKick();
+  ffmpegKick.on("error", (err) => {
+    console.error("Kick FFmpeg failed to start:", err);
   });
-  ffmpegX.on("exit", (code, signal) => {
-    console.log(`X FFmpeg exited with code ${code}, signal ${signal}`);
+  ffmpegKick.on("exit", (code, signal) => {
+    console.log(`Kick FFmpeg exited with code ${code}, signal ${signal}`);
   });
 }
-// END OF X INTEGRATION //
+// END OF Kick INTEGRATION //
