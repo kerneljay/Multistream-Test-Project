@@ -169,4 +169,4 @@ if (kick) {
     console.log(`Kick FFmpeg exited with code ${code}, signal ${signal}`);
   });
 }
-// END OF Kick INTEGRATION //
+// END OF KICK INTEGRATION //
