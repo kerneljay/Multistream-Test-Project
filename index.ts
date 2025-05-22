@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const closeServerOnStreamEnd = false;
 const ffmpegPath = "C:/ffmpeg/bin/ffmpeg.exe"; // This is ur FFmpeg path
 const obsKey = "heyobs"; // This is ur OBS stream key
 
@@ -12,9 +13,9 @@ const twitchStreamKey = process.env.TWITCH_KEY;
 const kickKey = process.env.KICK_KEY;
 const kickUrl = process.env.KICK_URL;
 
-const twitch = true;
-const youtube = true;
-const kick = true;
+const twitch = true; // wanna stream to twitch? go ahead!
+const youtube = true; // wanna stream to youtube? go ahead!
+const kick = true; // wanna stream to kick? go ahead!
 
 console.log("Twitch Stream: ", twitch ? "Enabled" : "Disabled");
 console.log("Youtube Stream: ", youtube ? "Enabled" : "Disabled");
@@ -23,7 +24,9 @@ console.log("Kick Stream: ", kick ? "Enabled" : "Disabled");
 // Override console logging in NodeMediaServer
 console.log = (...message) => {
   if (message.join(" ").includes("close")) {
-    handleStoppingStream();
+    if (closeServerOnStreamEnd) {
+      handleStoppingStream();
+    }
     return;
   }
   if (
@@ -48,7 +51,7 @@ console.log = (...message) => {
     return;
   if (message.join(" ").includes("undefined")) {
     console.error(message.join(" "));
-    return; // Hide homepage/url
+    return;
   }
   console.info(message.join(" "));
 };
@@ -72,7 +75,7 @@ const nms = new NodeMediaServer(config);
 nms.run();
 
 function handleStoppingStream() {
-  // This means the RTMP server closes locally whenever we stop the stream
+  // This means the RTMP server closes locally whenever we stop the stream (this is a energy saving setting)
   console.log("Stopping stream");
   process.exit();
 }
